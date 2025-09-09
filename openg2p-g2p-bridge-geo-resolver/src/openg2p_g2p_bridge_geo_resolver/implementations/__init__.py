@@ -1,0 +1,1 @@
+from .farmer_resolver_impl import FarmerGeoResolverImpl
