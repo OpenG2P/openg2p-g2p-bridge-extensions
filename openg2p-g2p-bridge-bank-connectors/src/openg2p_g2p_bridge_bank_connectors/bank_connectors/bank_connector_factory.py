@@ -10,4 +10,3 @@ _config = Settings.get_config()
 class BankConnectorFactory(BaseService):
     def get_bank_connector(self, sponsor_bank_code: str) -> BankConnectorInterface:
         return ZambiaCSVConnector.get_component()
-        

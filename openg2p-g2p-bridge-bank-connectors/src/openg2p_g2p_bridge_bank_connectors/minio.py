@@ -5,7 +5,6 @@ from minio import Minio
 from minio.error import S3Error
 from openg2p_fastapi_common.service import BaseService
 
-
 from .config import Settings
 
 _config = Settings.get_config()
@@ -38,7 +37,7 @@ class MinioUploader(BaseService):
     def upload_csv_to_minio(self, filename: str, csv_content: str):
         """
         Upload CSV content to Minio.
-        
+
         Args:
             filename: Name of the file to upload
             csv_content: CSV content as string
@@ -46,21 +45,21 @@ class MinioUploader(BaseService):
         try:
             # Create the full object path
             object_path = f"{_config.zambia_csv_folder_path}/{filename}"
-            
+
             # Convert string to bytes
-            csv_bytes = csv_content.encode('utf-8')
-            
+            csv_bytes = csv_content.encode("utf-8")
+
             # Upload to Minio
             self.minio_client.put_object(
                 bucket_name=_config.minio_bucket_name,
                 object_name=object_path,
                 data=io.BytesIO(csv_bytes),
                 length=len(csv_bytes),
-                content_type='text/csv'
+                content_type="text/csv",
             )
-            
+
             _logger.info(f"Successfully uploaded {filename} to {_config.minio_bucket_name}/{object_path}")
-            
+
         except S3Error as e:
             _logger.error(f"Error uploading to Minio: {e}")
             raise

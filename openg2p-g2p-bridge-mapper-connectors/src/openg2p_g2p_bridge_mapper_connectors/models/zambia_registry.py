@@ -1,12 +1,13 @@
-from datetime import datetime, date
+from datetime import date, datetime
 
 from openg2p_fastapi_common.models import BaseORMModel
-from sqlalchemy import DateTime, Integer, String, Boolean, Date
+from sqlalchemy import Boolean, Date, DateTime, Integer, String
 from sqlalchemy.orm import mapped_column
 
 
 class G2PRegistrantID(BaseORMModel):
     """Registrant ID table"""
+
     __tablename__ = "g2p_reg_id"
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -18,6 +19,7 @@ class G2PRegistrantID(BaseORMModel):
 
 class G2PPhoneNumber(BaseORMModel):
     """Phone Number table"""
+
     __tablename__ = "g2p_phone_number"
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -32,16 +34,17 @@ class G2PPhoneNumber(BaseORMModel):
 
 class ZambiaRegistry(BaseORMModel):
     """Main registrant table (res_partner) with Zambia-specific fields"""
+
     __tablename__ = "res_partner"
 
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     name = mapped_column(String, nullable=False)
     is_registrant = mapped_column(Boolean, default=True)
-    
+
     # Basic information
     email = mapped_column(String, nullable=True)
     create_date = mapped_column(DateTime, default=datetime.now())
-    
+
     # Zambia-specific fields as mentioned
     family_name = mapped_column(String, nullable=True)
     given_name = mapped_column(String, nullable=True)

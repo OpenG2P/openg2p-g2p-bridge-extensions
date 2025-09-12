@@ -36,10 +36,10 @@ class ZambiaCSVConnector(BankConnectorInterface):
     def initiate_payment(self, payment_payloads: List[DisbursementPaymentPayload]) -> PaymentResponse:
         """
         Process payment payloads by creating a CSV file and uploading to Minio.
-        
+
         Args:
             payment_payloads: List of DisbursementPaymentPayload objects
-            
+
         Returns:
             PaymentResponse indicating success or failure
         """
@@ -52,13 +52,13 @@ class ZambiaCSVConnector(BankConnectorInterface):
 
             # Generate filename using helper
             filename = ZambiaCSVHelper.generate_filename(payment_payloads[0])
-            
+
             # Create CSV content using helper
             csv_content = ZambiaCSVHelper.create_csv_content(payment_payloads)
-            
+
             # Upload to Minio
             self.minio_uploader.upload_csv_to_minio(filename, csv_content)
-            
+
             _logger.info(f"Successfully uploaded CSV file: {filename}")
             return PaymentResponse(status=PaymentStatus.SUCCESS, error_code="")
 
