@@ -3,13 +3,13 @@ from datetime import datetime
 from typing import List
 
 import orjson
+from openg2p_g2pconnect_common_lib.schemas import StatusEnum
 from openg2p_g2pconnect_mapper_lib.schemas import (
     ResolveRequest,
     ResolveResponse,
     ResolveResponseMessage,
     ResolveStatusReasonCode,
     SingleResolveResponse,
-    StatusEnum,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
@@ -63,7 +63,7 @@ class ZambiaMapper(MapperInterface):
             "original_name": result.name or "",
             "phone_no": result.phone_no or "",
             "id_value": result.id_value,
-            "nrc": result.nrc or "", 
+            "nrc": result.nrc or "",
             "fa_type": "BANK_ACCOUNT",
         }
 
@@ -74,9 +74,7 @@ class ZambiaMapper(MapperInterface):
         except Exception as e:
             _logger.error(f"Error constructing FA: {str(e)}")
             # Fallback to simple format if JSON encoding fails
-            return (
-                f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
-            )
+            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
@@ -140,7 +138,7 @@ class ZambiaMapper(MapperInterface):
                         .limit(1)
                         .scalar_subquery()
                     )
-                    
+
                     query = (
                         select(
                             G2PRegistrantID.value.label("id_value"),
