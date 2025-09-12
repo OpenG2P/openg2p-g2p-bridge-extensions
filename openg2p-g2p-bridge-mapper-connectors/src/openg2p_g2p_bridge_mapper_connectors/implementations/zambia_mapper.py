@@ -1,4 +1,5 @@
 import logging
+import orjson
 from datetime import datetime
 from typing import List
 
@@ -26,6 +27,54 @@ session_maker = sessionmaker(bind=_engine.get("db_engine_registry"), expire_on_c
 
 
 class ZambiaMapper(MapperInterface):
+    
+    def _construct_fa(self, result) -> str:
+        """
+        Construct Financial Address (FA) in a deconstructable JSON format.
+        This includes all the beneficiary details that can be parsed later.
+        
+        The FA format follows a JSON structure that can be easily deconstructed:
+        {
+            "partner_id": 123,
+            "name": "John Doe",
+            "given_name": "John",
+            "family_name": "Doe", 
+            "original_name": "John Doe",
+            "phone_no": "+260123456789",
+            "id_value": "ZM001234567",
+            "fa_type": "BANK_ACCOUNT"
+        }
+        """
+        # Construct full name from available parts
+        name_parts = []
+        if result.given_name:
+            name_parts.append(result.given_name)
+        if result.family_name:
+            name_parts.append(result.family_name)
+        
+        full_name = " ".join(name_parts) if name_parts else result.name
+        
+        # Create FA data structure with all available information
+        fa_data = {
+            "partner_id": result.partner_id,
+            "name": full_name,
+            "given_name": result.given_name or "",
+            "family_name": result.family_name or "",
+            "original_name": result.name or "",
+            "phone_no": result.phone_no or "",
+            "id_value": result.id_value,
+            "fa_type": "BANK_ACCOUNT"
+        }
+        
+        # Convert to JSON string for deconstructable format
+        try:
+            fa_json = orjson.dumps(fa_data).decode()
+            return fa_json
+        except Exception as e:
+            _logger.error(f"Error constructing FA: {str(e)}")
+            # Fallback to simple format if JSON encoding fails
+            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},fa_type:BANK_ACCOUNT"
+    
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
         Resolve the given request from Mapper and return the result.
@@ -129,6 +178,9 @@ class ZambiaMapper(MapperInterface):
                             # Use constructed name if available, otherwise fall back to main name field
                             full_name = " ".join(name_parts) if name_parts else result.name
                             
+                            # Construct FA with all beneficiary details in deconstructable format
+                            fa_value = self._construct_fa(result)
+                            
                             _logger.debug(f"Found beneficiary: {full_name} with phone: {result.phone_no}")
                             
                             resolve_responses.append(
@@ -136,6 +188,7 @@ class ZambiaMapper(MapperInterface):
                                     reference_id=single_request.reference_id,
                                     timestamp=datetime.now(),
                                     id=result.id_value,
+                                    fa=fa_value,  # Add the constructed FA
                                     status=StatusEnum.succ,
                                     status_reason_code=ResolveStatusReasonCode.succ_id_active,
                                     status_reason_message=f"Beneficiary found: {full_name}, Phone: {result.phone_no or 'N/A'}"
