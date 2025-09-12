@@ -41,6 +41,7 @@ class ZambiaMapper(MapperInterface):
             "original_name": "John Doe",
             "phone_no": "+260123456789",
             "id_value": "ZM001234567",
+            "nrc": "123456/78/1",
             "fa_type": "BANK_ACCOUNT"
         }
         """
@@ -62,6 +63,7 @@ class ZambiaMapper(MapperInterface):
             "original_name": result.name or "",
             "phone_no": result.phone_no or "",
             "id_value": result.id_value,
+            "nrc": result.nrc or "", 
             "fa_type": "BANK_ACCOUNT",
         }
 
@@ -73,7 +75,7 @@ class ZambiaMapper(MapperInterface):
             _logger.error(f"Error constructing FA: {str(e)}")
             # Fallback to simple format if JSON encoding fails
             return (
-                f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},fa_type:BANK_ACCOUNT"
+                f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
             )
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
@@ -130,6 +132,15 @@ class ZambiaMapper(MapperInterface):
             with session_maker() as registry_session:
                 try:
                     # Bulk query using WHERE IN clause
+                    # Create subquery for NRC (id_type = 2)
+                    nrc_subquery = (
+                        select(G2PRegistrantID.value.label("nrc_value"))
+                        .where(G2PRegistrantID.partner_id == ZambiaRegistry.id)
+                        .where(G2PRegistrantID.id_type == 2)
+                        .limit(1)
+                        .scalar_subquery()
+                    )
+                    
                     query = (
                         select(
                             G2PRegistrantID.value.label("id_value"),
@@ -139,6 +150,7 @@ class ZambiaMapper(MapperInterface):
                             G2PPhoneNumber.phone_no,
                             ZambiaRegistry.id.label("partner_id"),
                             G2PPhoneNumber.date_collected,
+                            nrc_subquery.label("nrc"),
                         )
                         .join(ZambiaRegistry, G2PRegistrantID.partner_id == ZambiaRegistry.id)
                         .outerjoin(G2PPhoneNumber, ZambiaRegistry.id == G2PPhoneNumber.partner_id)
