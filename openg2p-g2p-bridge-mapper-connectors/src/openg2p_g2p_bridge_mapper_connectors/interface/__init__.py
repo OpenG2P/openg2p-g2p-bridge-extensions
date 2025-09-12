@@ -1,1 +1,1 @@
-from .notification_interface import MapperInterface
+from .mapper_interface import MapperInterface
