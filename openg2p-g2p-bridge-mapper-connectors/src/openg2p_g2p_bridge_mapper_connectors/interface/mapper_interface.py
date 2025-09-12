@@ -3,10 +3,7 @@ from openg2p_g2pconnect_mapper_lib.schemas import ResolveRequest, ResolveRespons
 
 
 class MapperInterface(BaseService):
-    def resolve(
-        self,
-        resolve_request: ResolveRequest
-    ) -> ResolveResponse | None:
+    def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
         Resolve the given request from Mapper and return the ResolveResponse.
         """
