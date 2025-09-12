@@ -12,3 +12,7 @@ This module provides a notification abstraction for the OpenG2P G2P Bridge, incl
 
 ## Usage
 Import the interface and use a reference implementation to send notifications to recipients.
+
+## Licenses
+
+This repository is licensed under [MPL-2.0](LICENSE).
