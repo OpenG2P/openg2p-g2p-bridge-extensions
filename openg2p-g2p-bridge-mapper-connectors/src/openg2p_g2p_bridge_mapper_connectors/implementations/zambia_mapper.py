@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 import orjson
-from openg2p_g2pconnect_common_lib.schemas import StatusEnum
+from openg2p_g2pconnect_common_lib.schemas import StatusEnum, SyncResponseHeader
 from openg2p_g2pconnect_mapper_lib.schemas import (
     ResolveRequest,
     ResolveResponse,
@@ -243,8 +243,18 @@ class ZambiaMapper(MapperInterface):
                             )
                         )
 
-        # Construct the response
+        # Construct the response with required header
+        header = SyncResponseHeader(
+            message_id=resolve_request.header.message_id,
+            message_ts=datetime.now().isoformat(),
+            action="resolve",
+            status=StatusEnum.succ,
+            total_count=len(resolve_responses),
+            completed_count=len(resolve_responses),
+        )
+
         resolve_response = ResolveResponse(
+            header=header,
             message=ResolveResponseMessage(
                 transaction_id=resolve_request.message.transaction_id, resolve_response=resolve_responses
             )
