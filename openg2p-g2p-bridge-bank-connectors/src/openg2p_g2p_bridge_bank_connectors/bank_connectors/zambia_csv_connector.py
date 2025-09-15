@@ -38,7 +38,7 @@ class ZambiaCSVConnector(BankConnectorInterface):
         """Not implemented for CSV connector - passing for now."""
         _logger.info("block_funds not implemented for ZambiaCSVConnector")
         return BlockFundsResponse(
-            status=FundsBlockedWithBankEnum.FUNDS_BLOCK_SUCCESS, block_reference_no="FUNDS_BLOCKED" error_code=""
+            status=FundsBlockedWithBankEnum.FUNDS_BLOCK_SUCCESS, block_reference_no="FUNDS_BLOCKED", error_code=""
         )
 
     def initiate_payment(self, payment_payloads: List[DisbursementPaymentPayload]) -> PaymentResponse:
