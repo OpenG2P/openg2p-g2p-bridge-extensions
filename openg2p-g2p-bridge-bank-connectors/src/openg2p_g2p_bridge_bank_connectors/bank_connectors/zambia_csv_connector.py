@@ -25,7 +25,7 @@ class ZambiaCSVConnector(BankConnectorInterface):
     def __init__(self):
         """Initialize the Zambia CSV Connector with helpers and minio uploader."""
         super().__init__()
-        self.minio_uploader = MinioUploader().get_component()
+        self.minio_uploader = MinioUploader.get_component()
 
     def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         """Not implemented for CSV connector - passing for now."""
