@@ -9,6 +9,10 @@ from ..bank_interface.bank_connector_interface import (
     PaymentResponse,
     PaymentStatus,
 )
+from openg2p_g2p_bridge_models.models import (
+    FundsAvailableWithBankEnum,
+    FundsBlockedWithBankEnum,
+)
 from ..config import Settings
 from ..helpers import ZambiaCSVHelper
 from ..minio import MinioUploader
@@ -26,12 +30,16 @@ class ZambiaCSVConnector(BankConnectorInterface):
     def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         """Not implemented for CSV connector - passing for now."""
         _logger.info("check_funds not implemented for ZambiaCSVConnector")
-        pass
+        return CheckFundsResponse(
+            status=FundsAvailableWithBankEnum.FUNDS_AVAILABLE, error_code=""
+        )
 
     def block_funds(self, account_number, currency, amount) -> BlockFundsResponse:
         """Not implemented for CSV connector - passing for now."""
         _logger.info("block_funds not implemented for ZambiaCSVConnector")
-        pass
+        return BlockFundsResponse(
+            status=FundsBlockedWithBankEnum.FUNDS_BLOCKED, error_code=""
+        )
 
     def initiate_payment(self, payment_payloads: List[DisbursementPaymentPayload]) -> PaymentResponse:
         """
