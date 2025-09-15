@@ -10,6 +10,7 @@ from openg2p_g2pconnect_mapper_lib.schemas import (
     ResolveStatusReasonCode,
     SingleResolveResponse,
 )
+from openg2p_g2pconnect_mapper_lib.schemas.resolve import AccountProviderInfo
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
@@ -29,12 +30,16 @@ class ZambiaMapper(MapperInterface):
     def _construct_fa(self, result) -> str:
         """
         Construct Financial Address (FA) in a key-value format that can be parsed with regex.
-        This includes all the beneficiary details that can be deconstructed later.
+        Uses only FAKeys-compatible fields for proper deconstruction.
 
         The FA format follows a dot-separated key:value structure:
-        partner_id:123.name:John Doe.given_name:John.family_name:Doe.original_name:John Doe.mobile_number:+260123456789.id:123.nrc:123456/78/1.fa_type:BANK_ACCOUNT
+        account_number:123.bank_code:123456/78/1.mobile_number:+260123456789.fa_type:BANK_ACCOUNT
 
-        This format enables regex-based parsing and ends with fa_type for strategy detection.
+        Field mapping:
+        - account_number: partner_id (unique identifier)
+        - bank_code: NRC (National Registration Card)
+        - mobile_number: phone number
+        - fa_type: BANK_ACCOUNT (for strategy detection)
         """
         # Construct full name from available parts
         name_parts = []
@@ -45,24 +50,20 @@ class ZambiaMapper(MapperInterface):
 
         full_name = " ".join(name_parts) if name_parts else result.name
 
-        # Create FA in key-value format similar to the regex pattern
+        # Create FA in key-value format using only FAKeys-compatible fields
+        # Map our data to available FAKeys where possible
         try:
             fa_string = (
-                f"partner_id:{result.partner_id}."
-                f"name:{full_name}."
-                f"given_name:{result.given_name or ''}."
-                f"family_name:{result.family_name or ''}."
-                f"original_name:{result.name or ''}."
+                f"account_number:{result.partner_id}."  # Use partner_id as account number
+                f"bank_code:{result.nrc or ''}."        # Store NRC in bank_code field
                 f"mobile_number:{result.phone_no or ''}."
-                f"id:{result.partner_id}."
-                f"nrc:{result.nrc or ''}."
                 f"fa_type:BANK_ACCOUNT"
             )
             return fa_string
         except Exception as e:
             _logger.error(f"Error constructing FA: {str(e)}")
             # Fallback to simple format if construction fails
-            return f"name:{full_name}.mobile_number:{result.phone_no or ''}.id:{result.partner_id}.nrc:{result.nrc or ''}.fa_type:BANK_ACCOUNT"
+            return f"account_number:{result.partner_id}.mobile_number:{result.phone_no or ''}.fa_type:BANK_ACCOUNT"
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
@@ -184,8 +185,15 @@ class ZambiaMapper(MapperInterface):
                             # Use constructed name if available, otherwise fall back to main name field
                             full_name = " ".join(name_parts) if name_parts else result.name
 
-                            # Construct FA with all beneficiary details in deconstructable format
+                            # Construct FA with financial details
                             fa_value = self._construct_fa(result)
+
+                            # Create AccountProviderInfo with beneficiary details
+                            account_provider_info = AccountProviderInfo(
+                                name=full_name,
+                                code=str(result.partner_id),  # Use partner_id as code
+                                subcode=result.nrc or None,   # Use NRC as subcode if available
+                            )
 
                             _logger.debug(f"Found beneficiary: {full_name} with phone: {result.phone_no}")
 
@@ -194,7 +202,8 @@ class ZambiaMapper(MapperInterface):
                                     reference_id=single_request.reference_id,
                                     timestamp=datetime.now(),
                                     id=beneficiary_id,  # Use the original partner_id from request
-                                    fa=fa_value,  # Add the constructed FA
+                                    fa=fa_value,  # Financial address with mobile number
+                                    account_provider_info=account_provider_info,  # Beneficiary details
                                     status=StatusEnum.succ,
                                     status_reason_code=ResolveStatusReasonCode.succ_id_active,
                                     status_reason_message=f"Beneficiary found: {full_name}, Phone: {result.phone_no or 'N/A'}",
