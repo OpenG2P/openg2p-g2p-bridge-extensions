@@ -41,21 +41,12 @@ class ZambiaMapper(MapperInterface):
         - mobile_number: phone number
         - fa_type: BANK_ACCOUNT (for strategy detection)
         """
-        # Construct full name from available parts
-        name_parts = []
-        if result.given_name:
-            name_parts.append(result.given_name)
-        if result.family_name:
-            name_parts.append(result.family_name)
-
-        full_name = " ".join(name_parts) if name_parts else result.name
-
         # Create FA in key-value format using only FAKeys-compatible fields
         # Map our data to available FAKeys where possible
         try:
             fa_string = (
                 f"account_number:{result.partner_id}."  # Use partner_id as account number
-                f"bank_code:{result.nrc or ''}."        # Store NRC in bank_code field
+                f"bank_code:{result.nrc or ''}."  # Store NRC in bank_code field
                 f"mobile_number:{result.phone_no or ''}."
                 f"fa_type:BANK_ACCOUNT"
             )
@@ -192,7 +183,7 @@ class ZambiaMapper(MapperInterface):
                             account_provider_info = AccountProviderInfo(
                                 name=full_name,
                                 code=str(result.partner_id),  # Use partner_id as code
-                                subcode=result.nrc or None,   # Use NRC as subcode if available
+                                subcode=result.nrc or None,  # Use NRC as subcode if available
                             )
 
                             _logger.debug(f"Found beneficiary: {full_name} with phone: {result.phone_no}")

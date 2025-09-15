@@ -4,6 +4,10 @@ from typing import List
 
 from minio import Minio
 from minio.error import S3Error
+from openg2p_g2p_bridge_models.models import (
+    FundsAvailableWithBankEnum,
+    FundsBlockedWithBankEnum,
+)
 
 from ..bank_interface.bank_connector_interface import (
     BankConnectorInterface,
@@ -13,10 +17,6 @@ from ..bank_interface.bank_connector_interface import (
     PaymentResponse,
     PaymentStatus,
 )
-from openg2p_g2p_bridge_models.models import (
-    FundsAvailableWithBankEnum,
-    FundsBlockedWithBankEnum,
-)
 from ..config import Settings
 from ..helpers import ZambiaCSVHelper
 
@@ -25,7 +25,6 @@ _logger = logging.getLogger(_config.logging_default_logger_name)
 
 
 class ZambiaCSVConnector(BankConnectorInterface):
-    
     def __init__(self):
         """Initialize the Minio client."""
         self.minio_client = Minio(
@@ -75,19 +74,19 @@ class ZambiaCSVConnector(BankConnectorInterface):
         except S3Error as e:
             _logger.error(f"Error uploading to Minio: {e}")
             raise
-   
+
     def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         """Not implemented for CSV connector - passing for now."""
         _logger.info("check_funds not implemented for ZambiaCSVConnector")
-        return CheckFundsResponse(
-            status=FundsAvailableWithBankEnum.FUNDS_AVAILABLE, error_code=""
-        )
+        return CheckFundsResponse(status=FundsAvailableWithBankEnum.FUNDS_AVAILABLE, error_code="")
 
     def block_funds(self, account_number, currency, amount) -> BlockFundsResponse:
         """Not implemented for CSV connector - passing for now."""
         _logger.info("block_funds not implemented for ZambiaCSVConnector")
         return BlockFundsResponse(
-            status=FundsBlockedWithBankEnum.FUNDS_BLOCK_SUCCESS, block_reference_no="FUNDS_BLOCKED", error_code=""
+            status=FundsBlockedWithBankEnum.FUNDS_BLOCK_SUCCESS,
+            block_reference_no="FUNDS_BLOCKED",
+            error_code="",
         )
 
     def initiate_payment(self, payment_payloads: List[DisbursementPaymentPayload]) -> PaymentResponse:
