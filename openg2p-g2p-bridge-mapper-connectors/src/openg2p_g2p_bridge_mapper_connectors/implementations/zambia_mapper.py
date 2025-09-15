@@ -63,7 +63,7 @@ class ZambiaMapper(MapperInterface):
             "original_name": result.name or "",
             "phone_no": result.phone_no or "",
             "id": result.partner_id,  # Use partner_id as the main ID
-            "nrc": result.nrc or "",  
+            "nrc": result.nrc or "",
             "fa_type": "BANK_ACCOUNT",
         }
 
