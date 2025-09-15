@@ -7,11 +7,9 @@ _config = Settings.get_config()
 from openg2p_fastapi_common.app import Initializer as BaseInitializer
 
 from .bank_connectors import BankConnectorFactory, ZambiaCSVConnector
-from .minio import MinioUploader
 
 
 class Initializer(BaseInitializer):
     def initialize(self, **kwargs):
-        MinioUploader()
         BankConnectorFactory()
         ZambiaCSVConnector()
