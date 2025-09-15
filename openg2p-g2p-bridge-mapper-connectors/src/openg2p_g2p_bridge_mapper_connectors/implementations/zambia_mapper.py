@@ -40,7 +40,7 @@ class ZambiaMapper(MapperInterface):
             "family_name": "Doe",
             "original_name": "John Doe",
             "phone_no": "+260123456789",
-            "id_value": "ZM001234567",
+            "id_value": "100",
             "nrc": "123456/78/1",
             "fa_type": "BANK_ACCOUNT"
         }
@@ -62,8 +62,8 @@ class ZambiaMapper(MapperInterface):
             "family_name": result.family_name or "",
             "original_name": result.name or "",
             "phone_no": result.phone_no or "",
-            "id_value": result.id_value or "",  # This is the actual registrant ID value
-            "nrc": result.nrc or "",
+            "id": result.partner_id,  # Use partner_id as the main ID
+            "nrc": result.nrc or "",  
             "fa_type": "BANK_ACCOUNT",
         }
 
@@ -74,7 +74,7 @@ class ZambiaMapper(MapperInterface):
         except Exception as e:
             _logger.error(f"Error constructing FA: {str(e)}")
             # Fallback to simple format if JSON encoding fails
-            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value or 'N/A'},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
+            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.partner_id},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
@@ -133,18 +133,17 @@ class ZambiaMapper(MapperInterface):
                     # Create alias for G2PRegistrantID to avoid conflicts
                     nrc_table = G2PRegistrantID.__table__.alias("nrc_table")
 
-                    # Create subquery for NRC (id_type = 2)
+                    # Create subquery for NRC (id_type = 1)
                     nrc_subquery = (
                         select(nrc_table.c.value)
                         .where(nrc_table.c.partner_id == ZambiaRegistry.id)
-                        .where(nrc_table.c.id_type == 2)
+                        .where(nrc_table.c.id_type == 1)
                         .limit(1)
                         .scalar_subquery()
                     )
 
                     query = (
                         select(
-                            G2PRegistrantID.value.label("id_value"),
                             ZambiaRegistry.name,
                             ZambiaRegistry.family_name,
                             ZambiaRegistry.given_name,
@@ -153,7 +152,6 @@ class ZambiaMapper(MapperInterface):
                             G2PPhoneNumber.date_collected,
                             nrc_subquery.label("nrc"),
                         )
-                        .join(ZambiaRegistry, G2PRegistrantID.partner_id == ZambiaRegistry.id)
                         .outerjoin(G2PPhoneNumber, ZambiaRegistry.id == G2PPhoneNumber.partner_id)
                         .where(
                             ZambiaRegistry.id.in_(beneficiary_ids)
@@ -257,7 +255,7 @@ class ZambiaMapper(MapperInterface):
             header=header,
             message=ResolveResponseMessage(
                 transaction_id=resolve_request.message.transaction_id, resolve_response=resolve_responses
-            )
+            ),
         )
 
         _logger.info(f"Returning resolve response: {resolve_response}")
