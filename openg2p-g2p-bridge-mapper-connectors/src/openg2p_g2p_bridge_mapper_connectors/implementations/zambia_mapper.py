@@ -130,11 +130,14 @@ class ZambiaMapper(MapperInterface):
             with session_maker() as registry_session:
                 try:
                     # Bulk query using WHERE IN clause
+                    # Create alias for G2PRegistrantID to avoid conflicts
+                    nrc_table = G2PRegistrantID.__table__.alias("nrc_table")
+                    
                     # Create subquery for NRC (id_type = 2)
                     nrc_subquery = (
-                        select(G2PRegistrantID.value.label("nrc_value"))
-                        .where(G2PRegistrantID.partner_id == ZambiaRegistry.id)
-                        .where(G2PRegistrantID.id_type == 2)
+                        select(nrc_table.c.value)
+                        .where(nrc_table.c.partner_id == ZambiaRegistry.id)
+                        .where(nrc_table.c.id_type == 2)
                         .limit(1)
                         .scalar_subquery()
                     )
