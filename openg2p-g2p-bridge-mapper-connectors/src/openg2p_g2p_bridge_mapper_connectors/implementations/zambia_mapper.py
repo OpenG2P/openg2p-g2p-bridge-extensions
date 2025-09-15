@@ -62,7 +62,7 @@ class ZambiaMapper(MapperInterface):
             "family_name": result.family_name or "",
             "original_name": result.name or "",
             "phone_no": result.phone_no or "",
-            "id_value": result.id_value,
+            "id_value": result.id_value or "",  # This is the actual registrant ID value
             "nrc": result.nrc or "",
             "fa_type": "BANK_ACCOUNT",
         }
@@ -74,7 +74,7 @@ class ZambiaMapper(MapperInterface):
         except Exception as e:
             _logger.error(f"Error constructing FA: {str(e)}")
             # Fallback to simple format if JSON encoding fails
-            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
+            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.id_value or 'N/A'},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
@@ -132,7 +132,7 @@ class ZambiaMapper(MapperInterface):
                     # Bulk query using WHERE IN clause
                     # Create alias for G2PRegistrantID to avoid conflicts
                     nrc_table = G2PRegistrantID.__table__.alias("nrc_table")
-                    
+
                     # Create subquery for NRC (id_type = 2)
                     nrc_subquery = (
                         select(nrc_table.c.value)
@@ -155,32 +155,38 @@ class ZambiaMapper(MapperInterface):
                         )
                         .join(ZambiaRegistry, G2PRegistrantID.partner_id == ZambiaRegistry.id)
                         .outerjoin(G2PPhoneNumber, ZambiaRegistry.id == G2PPhoneNumber.partner_id)
-                        .where(G2PRegistrantID.value.in_(beneficiary_ids))
+                        .where(
+                            ZambiaRegistry.id.in_(beneficiary_ids)
+                        )  # Search by partner_id instead of value
                         .where(ZambiaRegistry.is_registrant)
                         .where(
                             (G2PPhoneNumber.disabled.is_(None)) | (G2PPhoneNumber.id.is_(None))
                         )  # Include records even if no phone number exists
-                        .order_by(G2PRegistrantID.value, G2PPhoneNumber.date_collected.desc())
+                        .order_by(
+                            ZambiaRegistry.id, G2PPhoneNumber.date_collected.desc()
+                        )  # Order by partner_id
                     )
 
                     # Execute bulk query
                     results = registry_session.execute(query).fetchall()
                     _logger.info(f"Bulk query returned {len(results)} results")
 
-                    # Group results by ID and keep only the most recent phone number per ID
-                    id_to_result_map = {}
+                    # Group results by partner_id and keep only the most recent phone number per partner
+                    partner_to_result_map = {}
                     for result in results:
-                        id_value = result.id_value
-                        if id_value not in id_to_result_map:
-                            # First result for this ID (most recent phone due to ORDER BY)
-                            id_to_result_map[id_value] = result
+                        partner_id = result.partner_id
+                        if partner_id not in partner_to_result_map:
+                            # First result for this partner_id (most recent phone due to ORDER BY)
+                            partner_to_result_map[partner_id] = result
 
                     # Process all requested IDs and construct responses
                     for beneficiary_id in beneficiary_ids:
                         single_request = id_to_request_map[beneficiary_id]
+                        # Convert beneficiary_id to int for comparison with partner_id
+                        partner_id = int(beneficiary_id)
 
-                        if beneficiary_id in id_to_result_map:
-                            result = id_to_result_map[beneficiary_id]
+                        if partner_id in partner_to_result_map:
+                            result = partner_to_result_map[partner_id]
 
                             # Construct full name from available parts
                             name_parts = []
@@ -201,7 +207,7 @@ class ZambiaMapper(MapperInterface):
                                 SingleResolveResponse(
                                     reference_id=single_request.reference_id,
                                     timestamp=datetime.now(),
-                                    id=result.id_value,
+                                    id=beneficiary_id,  # Use the original partner_id from request
                                     fa=fa_value,  # Add the constructed FA
                                     status=StatusEnum.succ,
                                     status_reason_code=ResolveStatusReasonCode.succ_id_active,
