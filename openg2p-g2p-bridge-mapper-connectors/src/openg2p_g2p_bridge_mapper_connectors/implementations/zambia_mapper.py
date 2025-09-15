@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from typing import List
 
-import orjson
 from openg2p_g2pconnect_common_lib.schemas import StatusEnum, SyncResponseHeader
 from openg2p_g2pconnect_mapper_lib.schemas import (
     ResolveRequest,
@@ -29,21 +28,13 @@ session_maker = sessionmaker(bind=_engine.get("db_engine_registry"), expire_on_c
 class ZambiaMapper(MapperInterface):
     def _construct_fa(self, result) -> str:
         """
-        Construct Financial Address (FA) in a deconstructable JSON format.
-        This includes all the beneficiary details that can be parsed later.
+        Construct Financial Address (FA) in a key-value format that can be parsed with regex.
+        This includes all the beneficiary details that can be deconstructed later.
 
-        The FA format follows a JSON structure that can be easily deconstructed:
-        {
-            "partner_id": 123,
-            "name": "John Doe",
-            "given_name": "John",
-            "family_name": "Doe",
-            "original_name": "John Doe",
-            "phone_no": "+260123456789",
-            "id_value": "100",
-            "nrc": "123456/78/1",
-            "fa_type": "BANK_ACCOUNT"
-        }
+        The FA format follows a dot-separated key:value structure:
+        partner_id:123.name:John Doe.given_name:John.family_name:Doe.original_name:John Doe.mobile_number:+260123456789.id:123.nrc:123456/78/1.fa_type:BANK_ACCOUNT
+
+        This format enables regex-based parsing and ends with fa_type for strategy detection.
         """
         # Construct full name from available parts
         name_parts = []
@@ -54,27 +45,24 @@ class ZambiaMapper(MapperInterface):
 
         full_name = " ".join(name_parts) if name_parts else result.name
 
-        # Create FA data structure with all available information
-        fa_data = {
-            "partner_id": result.partner_id,
-            "name": full_name,
-            "given_name": result.given_name or "",
-            "family_name": result.family_name or "",
-            "original_name": result.name or "",
-            "phone_no": result.phone_no or "",
-            "id": result.partner_id,  # Use partner_id as the main ID
-            "nrc": result.nrc or "",
-            "fa_type": "BANK_ACCOUNT",
-        }
-
-        # Convert to JSON string for deconstructable format
+        # Create FA in key-value format similar to the regex pattern
         try:
-            fa_json = orjson.dumps(fa_data).decode()
-            return fa_json
+            fa_string = (
+                f"partner_id:{result.partner_id}."
+                f"name:{full_name}."
+                f"given_name:{result.given_name or ''}."
+                f"family_name:{result.family_name or ''}."
+                f"original_name:{result.name or ''}."
+                f"mobile_number:{result.phone_no or ''}."
+                f"id:{result.partner_id}."
+                f"nrc:{result.nrc or ''}."
+                f"fa_type:BANK_ACCOUNT"
+            )
+            return fa_string
         except Exception as e:
             _logger.error(f"Error constructing FA: {str(e)}")
-            # Fallback to simple format if JSON encoding fails
-            return f"name:{full_name},phone:{result.phone_no or 'N/A'},id:{result.partner_id},nrc:{result.nrc or 'N/A'},fa_type:BANK_ACCOUNT"
+            # Fallback to simple format if construction fails
+            return f"name:{full_name}.mobile_number:{result.phone_no or ''}.id:{result.partner_id}.nrc:{result.nrc or ''}.fa_type:BANK_ACCOUNT"
 
     def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
