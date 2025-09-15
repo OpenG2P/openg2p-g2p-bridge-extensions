@@ -22,11 +22,7 @@ _logger = logging.getLogger(_config.logging_default_logger_name)
 
 
 class ZambiaCSVConnector(BankConnectorInterface):
-    def __init__(self):
-        """Initialize the Zambia CSV Connector with helpers and minio uploader."""
-        super().__init__()
-        self.minio_uploader = MinioUploader.get_component()
-
+   
     def check_funds(self, account_number, currency, amount) -> CheckFundsResponse:
         """Not implemented for CSV connector - passing for now."""
         _logger.info("check_funds not implemented for ZambiaCSVConnector")
@@ -65,7 +61,8 @@ class ZambiaCSVConnector(BankConnectorInterface):
             csv_content = ZambiaCSVHelper.create_csv_content(payment_payloads)
 
             # Upload to Minio
-            self.minio_uploader.upload_csv_to_minio(filename, csv_content)
+            minio_uploader = MinioUploader.get_component()
+            minio_uploader.upload_csv_to_minio(filename, csv_content)
 
             _logger.info(f"Successfully uploaded CSV file: {filename}")
             return PaymentResponse(status=PaymentStatus.SUCCESS, error_code="")
