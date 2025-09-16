@@ -16,4 +16,12 @@ class Settings(BaseSettings):
     funds_disbursement_url_example_bank: str = (
         "https://example-bank.dev.openg2p.org/api/example-bank/initiate_payment"
     )
-    bank_simulator_code: str = "EXAMPLE-BANK"
+    bank_simulator_code: str = "ZAMBIA"
+
+    # Minio configuration for Zambia CSV Connector
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket_name: str = "zambia-csv-files"
+    minio_secure: bool = False
+    zambia_csv_folder_path: str = "disbursements"

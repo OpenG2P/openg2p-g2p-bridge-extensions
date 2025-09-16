@@ -27,6 +27,7 @@ class DisbursementPaymentPayload(BaseModel):
     remitting_account_branch_code: Optional[str] = None
     remitting_account_currency: str
     payment_amount: float
+    compute_elements: Optional[dict] = None
     funds_blocked_reference_number: str
 
     beneficiary_id: str
