@@ -60,11 +60,11 @@ class ZambiaCSVHelper:
         # Write data rows
         for payload in payment_payloads:
             row = [
-                payload.beneficiary_name or "",  # Full Name
-                payload.beneficiary_id or "",  # NRC (narrative_4 maps to beneficiary_id)
-                payload.beneficiary_phone_no or "",  # Phone
-                "",  # Total Days (left empty for now as requested)
-                payload.payment_amount or 0.0,  # Amount Due
+                payload.beneficiary_name or "-",  # Full Name
+                payload.beneficiary_bank_code or "-",  # NRC
+                payload.beneficiary_phone_no or "-",  # Phone
+                payload.compute_elements.get("total_days", "-") if payload.compute_elements else "-",  # Total Days
+                payload.payment_amount or "-",  # Amount Due
             ]
             writer.writerow(row)
 
