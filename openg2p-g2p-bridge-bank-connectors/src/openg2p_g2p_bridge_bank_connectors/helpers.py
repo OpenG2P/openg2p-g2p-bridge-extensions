@@ -63,7 +63,9 @@ class ZambiaCSVHelper:
                 payload.beneficiary_name or "-",  # Full Name
                 payload.beneficiary_bank_code or "-",  # NRC
                 payload.beneficiary_phone_no or "-",  # Phone
-                payload.compute_elements.get("number_of_days", "-") if payload.compute_elements else "-",  # Total Days
+                (
+                    payload.compute_elements.get("number_of_days", "-") if payload.compute_elements else "-"
+                ),  # Total Days
                 payload.payment_amount or "-",  # Amount Due
             ]
             writer.writerow(row)

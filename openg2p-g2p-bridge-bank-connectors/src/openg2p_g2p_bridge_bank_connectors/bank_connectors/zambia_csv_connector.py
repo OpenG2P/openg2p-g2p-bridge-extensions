@@ -27,7 +27,7 @@ _logger = logging.getLogger(_config.logging_default_logger_name)
 class ZambiaCSVConnector(BankConnectorInterface):
     def __init__(self):
         super().__init__()
-        
+
         self.minio_client = Minio(
             _config.minio_endpoint,
             access_key=_config.minio_access_key,
