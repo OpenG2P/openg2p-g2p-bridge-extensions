@@ -4,9 +4,9 @@
 from openg2p_fastapi_common.app import Initializer as BaseInitializer
 from openg2p_fastapi_common.utils.crypto import KeymanagerCryptoHelper
 
+from .client import SPARMapperClient
 from .factory import MapperFactory
 from .implementations import SPARMapper
-from .client import SPARMapperClient
 
 
 class Initializer(BaseInitializer):
@@ -15,4 +15,3 @@ class Initializer(BaseInitializer):
         SPARMapperClient()
         SPARMapper()
         KeymanagerCryptoHelper()
-

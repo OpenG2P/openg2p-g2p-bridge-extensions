@@ -1,2 +1,1 @@
 from .spar_mapper_client import SPARMapperClient
-

@@ -1,14 +1,17 @@
-import asyncio
 import logging
 from datetime import datetime
 
 from openg2p_fastapi_common.schemas import G2PRequestHeader
 from openg2p_spar_models.schemas.resolve import (
     ResolveRequest as SparResolveRequest,
+)
+from openg2p_spar_models.schemas.resolve import (
     ResolveRequestBody,
     ResolveRequestPayload,
-    ResolveResponse as SparResolveResponse,
     SingleResolveRequest,
+)
+from openg2p_spar_models.schemas.resolve import (
+    ResolveResponse as SparResolveResponse,
 )
 
 from ..client import SPARMapperClient
@@ -34,17 +37,17 @@ class SPARMapper(MapperInterface):
             ResolveResponse object with a list of results (id, fa, name)
             or None if the request fails
         """
-        _logger.info(
-            f"Received resolve request with {len(resolve_request.beneficiary_ids)} disbursement IDs"
-        )
+        _logger.info(f"Received resolve request with {len(resolve_request.beneficiary_ids)} disbursement IDs")
         _logger.info(f"Disbursement IDs: {resolve_request.beneficiary_ids}")
 
         try:
             # Convert custom ResolveRequest to SPAR ResolveRequest
             spar_request = self._convert_to_spar_request(resolve_request)
 
-            _logger.info(f"Converted to SPAR request with transaction_id: {spar_request.request_body.request_payload.transaction_id}")
-        
+            _logger.info(
+                f"Converted to SPAR request with transaction_id: {spar_request.request_body.request_payload.transaction_id}"
+            )
+
             # Await the async resolve_request in an async context
             spar_resolve_response: SparResolveResponse = await self.client.resolve_request(spar_request)
 
@@ -82,7 +85,7 @@ class SPARMapper(MapperInterface):
                 reference_id=disbursement_id,
                 timestamp=datetime.now().isoformat(),  # timestamp is a string in SPAR schema
                 id=disbursement_id,  # id is a string field
-                fa="",  
+                fa="",
                 scope="details",  # Default scope
                 locale="en",
             )
@@ -114,9 +117,7 @@ class SPARMapper(MapperInterface):
 
         return spar_request
 
-    def _convert_from_spar_response(
-        self, spar_response: SparResolveResponse
-    ) -> ResolveResponse:
+    def _convert_from_spar_response(self, spar_response: SparResolveResponse) -> ResolveResponse:
         """
         Convert SPAR ResolveResponse to custom ResolveResponse.
 
@@ -133,7 +134,9 @@ class SPARMapper(MapperInterface):
 
             fa_value = single_response.fa
 
-            name_value = single_response.account_provider_info.name if single_response.account_provider_info else None
+            name_value = (
+                single_response.account_provider_info.name if single_response.account_provider_info else None
+            )
 
             result = ResolveResult(
                 id=id_value,

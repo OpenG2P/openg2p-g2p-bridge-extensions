@@ -29,9 +29,7 @@ class SPARMapperClient(BaseService):
         """Get the CryptoHelper component for JWT signing."""
         return CryptoHelper.get_component(name=self.api_sign_crypto_helper_name)
 
-    async def resolve_request(
-        self, request: ResolveRequest, headers: dict | None = None
-    ) -> ResolveResponse:
+    async def resolve_request(self, request: ResolveRequest, headers: dict | None = None) -> ResolveResponse:
         """
         Send a resolve request to the SPAR Mapper API.
 
@@ -71,7 +69,6 @@ class SPARMapperClient(BaseService):
 
             response_data = res.json()
             _logger.info("Resolve request completed successfully")
-            
 
             # Parse and validate the response
             resolve_response = ResolveResponse.model_validate(response_data)
@@ -83,7 +80,7 @@ class SPARMapperClient(BaseService):
             )
 
             return resolve_response
-            
+
         except httpx.HTTPStatusError as e:
             _logger.exception("HTTP Error in resolve request")
             raise BaseAppException(
@@ -100,4 +97,3 @@ class SPARMapperClient(BaseService):
     async def close(self):
         """Close the HTTP client."""
         await self.http_client.aclose()
-
