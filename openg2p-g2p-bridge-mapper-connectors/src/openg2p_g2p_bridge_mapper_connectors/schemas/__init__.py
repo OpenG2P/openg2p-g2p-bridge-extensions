@@ -1,1 +1,1 @@
-from .resolve_schema import ResolveRequest, ResolveResponse
+from .resolve_schema import ResolveRequest, ResolveResponse, ResolveResult

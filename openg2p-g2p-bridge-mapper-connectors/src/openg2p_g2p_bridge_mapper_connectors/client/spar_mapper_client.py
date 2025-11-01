@@ -66,11 +66,12 @@ class SPARMapperClient(BaseService):
                 content=orjson.dumps(payload, option=orjson.OPT_SORT_KEYS),
                 headers=orig_headers,
             )
+            _logger.info(f"Response data: {res.text}")
             res.raise_for_status()
 
             response_data = res.json()
             _logger.info("Resolve request completed successfully")
-            _logger.debug(f"Response data: {response_data}")
+            
 
             # Parse and validate the response
             resolve_response = ResolveResponse.model_validate(response_data)

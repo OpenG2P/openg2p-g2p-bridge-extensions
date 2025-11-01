@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import List
 
 from openg2p_fastapi_common.schemas import G2PRequestHeader
 from openg2p_spar_models.schemas.resolve import (
@@ -14,7 +13,7 @@ from openg2p_spar_models.schemas.resolve import (
 
 from ..client import SPARMapperClient
 from ..interface.mapper_interface import MapperInterface
-from ..schemas import ResolveRequest, ResolveResponse
+from ..schemas import ResolveRequest, ResolveResponse, ResolveResult
 
 _logger = logging.getLogger("spar_mapper_impl")
 
@@ -24,44 +23,43 @@ class SPARMapper(MapperInterface):
         super().__init__()
         self.client = SPARMapperClient.get_component()
 
-    def resolve(self, resolve_request: ResolveRequest) -> List[ResolveResponse] | None:
+    async def resolve(self, resolve_request: ResolveRequest) -> ResolveResponse | None:
         """
         Resolve the given request from SPAR Mapper and return the result.
 
         Args:
-            resolve_request: ResolveRequest object containing disbursement_ids
+            resolve_request: ResolveRequest object containing beneficiary_ids
 
         Returns:
-            List of ResolveResponse objects with id, fa, and name
+            ResolveResponse object with a list of results (id, fa, name)
             or None if the request fails
         """
         _logger.info(
-            f"Received resolve request with {len(resolve_request.disbursement_ids)} disbursement IDs"
+            f"Received resolve request with {len(resolve_request.beneficiary_ids)} disbursement IDs"
         )
-        _logger.debug(f"Disbursement IDs: {resolve_request.disbursement_ids}")
+        _logger.info(f"Disbursement IDs: {resolve_request.beneficiary_ids}")
 
         try:
             # Convert custom ResolveRequest to SPAR ResolveRequest
             spar_request = self._convert_to_spar_request(resolve_request)
 
-            _logger.debug(f"Converted to SPAR request with transaction_id: {spar_request.request_body.request_payload.transaction_id}")
-
-            # Run the async resolve_request in a synchronous context
-            spar_resolve_response: SparResolveResponse = asyncio.run(
-                self.client.resolve_request(spar_request)
-            )
+            _logger.info(f"Converted to SPAR request with transaction_id: {spar_request.request_body.request_payload.transaction_id}")
+        
+            # Await the async resolve_request in an async context
+            spar_resolve_response: SparResolveResponse = await self.client.resolve_request(spar_request)
 
             _logger.info("Resolve request completed successfully")
             _logger.info(
                 f"Response status: {spar_resolve_response.response_header.response_status}, "
                 f"Transaction ID: {spar_resolve_response.response_body.response_payload.transaction_id}"
+                f"Response: {spar_resolve_response}"
             )
 
-            # Convert SPAR ResolveResponse to custom ResolveResponse list
-            resolve_responses = self._convert_from_spar_response(spar_resolve_response)
+            # Convert SPAR ResolveResponse to custom ResolveResponse
+            resolve_response = self._convert_from_spar_response(spar_resolve_response)
 
-            _logger.info(f"Returning {len(resolve_responses)} resolve responses")
-            return resolve_responses
+            _logger.info(f"Returning {len(resolve_response.results)} resolve results")
+            return resolve_response
 
         except Exception as e:
             _logger.error(f"Failed to resolve the request: {e}", exc_info=True)
@@ -72,7 +70,7 @@ class SPARMapper(MapperInterface):
         Convert custom ResolveRequest to SPAR ResolveRequest.
 
         Args:
-            resolve_request: Custom ResolveRequest with disbursement_ids
+            resolve_request: Custom ResolveRequest with beneficiary_ids
 
         Returns:
             SparResolveRequest with full G2P structure
@@ -88,7 +86,7 @@ class SPARMapper(MapperInterface):
                 scope="details",  # Default scope
                 locale="en",
             )
-            for disbursement_id in resolve_request.disbursement_ids
+            for disbursement_id in resolve_request.beneficiary_ids
         ]
 
         # Create the request payload
@@ -118,36 +116,36 @@ class SPARMapper(MapperInterface):
 
     def _convert_from_spar_response(
         self, spar_response: SparResolveResponse
-    ) -> List[ResolveResponse]:
+    ) -> ResolveResponse:
         """
-        Convert SPAR ResolveResponse to list of custom ResolveResponse.
+        Convert SPAR ResolveResponse to custom ResolveResponse.
 
         Args:
             spar_response: SPAR ResolveResponse with full G2P structure
 
         Returns:
-            List of custom ResolveResponse objects
+            ResolveResponse object with a list of results
         """
-        resolve_responses = []
+        results = []
 
         for single_response in spar_response.response_body.response_payload.resolve_response:
             id_value = single_response.id
 
-            fa_value = str(single_response.fa)
-        
+            fa_value = single_response.fa
+
             name_value = single_response.account_provider_info.name if single_response.account_provider_info else None
-            
-            resolve_response = ResolveResponse(
+
+            result = ResolveResult(
                 id=id_value,
                 fa=fa_value,
                 name=name_value,
             )
 
-            resolve_responses.append(resolve_response)
+            results.append(result)
 
             _logger.debug(
-                f"Converted response: id={id_value}, fa={fa_value}, name={name_value}, "
+                f"Converted result: id={id_value}, fa={fa_value}, name={name_value}, "
                 f"status={single_response.status}, status_reason={single_response.status_reason_code}"
             )
 
-        return resolve_responses
+        return ResolveResponse(results=results)
