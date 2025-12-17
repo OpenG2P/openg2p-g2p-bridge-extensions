@@ -17,7 +17,6 @@ classifiers = [
 ]
 dependencies = [
   "openg2p-fastapi-common",
-  "openg2p-spar-models",
 ]
 dynamic = ["version"]
 
