@@ -22,7 +22,7 @@ class SPARMapperClient(BaseService):
         self.url = _config.spar_mapper_url
         self.api_sign_enabled = _config.spar_mapper_api_sign_enabled
         self.api_sign_crypto_helper_name = "spar_mapper_crypto"
-        self.http_client = httpx.AsyncClient(timeout=30.0)
+        self.timeout = 30.0
 
     @cached_property
     def crypto_helper(self):
@@ -59,15 +59,18 @@ class SPARMapperClient(BaseService):
             _logger.info(f"Sending resolve request to {self.url}")
             _logger.debug(f"Request payload: {payload}")
 
-            res = await self.http_client.post(
-                self.url,
-                content=orjson.dumps(payload, option=orjson.OPT_SORT_KEYS),
-                headers=orig_headers,
-            )
-            _logger.info(f"Response data: {res.text}")
-            res.raise_for_status()
+            # Create client per-request to avoid event loop issues with Celery fork workers
+            async with httpx.AsyncClient(timeout=self.timeout) as http_client:
+                res = await http_client.post(
+                    self.url,
+                    content=orjson.dumps(payload, option=orjson.OPT_SORT_KEYS),
+                    headers=orig_headers,
+                )
+                _logger.info(f"Response data: {res.text}")
+                res.raise_for_status()
 
-            response_data = res.json()
+                response_data = res.json()
+
             _logger.info("Resolve request completed successfully")
 
             # Parse and validate the response
@@ -94,6 +97,3 @@ class SPARMapperClient(BaseService):
                 code="500",
             ) from e
 
-    async def close(self):
-        """Close the HTTP client."""
-        await self.http_client.aclose()
