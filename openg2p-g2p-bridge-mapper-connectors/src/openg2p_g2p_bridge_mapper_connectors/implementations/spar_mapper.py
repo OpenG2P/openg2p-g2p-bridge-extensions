@@ -8,6 +8,7 @@ from openg2p_spar_models.schemas.resolve import (
 from openg2p_spar_models.schemas.resolve import (
     ResolveRequestBody,
     ResolveRequestPayload,
+    ResolveScope,
     SingleResolveRequest,
 )
 from openg2p_spar_models.schemas.resolve import (
@@ -83,10 +84,10 @@ class SPARMapper(MapperInterface):
         single_resolve_requests = [
             SingleResolveRequest(
                 reference_id=disbursement_id,
-                timestamp=datetime.now().isoformat(),  # timestamp is a string in SPAR schema
-                id=disbursement_id,  # id is a string field
+                timestamp=datetime.now().isoformat(),
+                id=disbursement_id,
                 fa="",
-                scope="details",  # Default scope
+                scope=ResolveScope.details,
                 locale="en",
             )
             for disbursement_id in resolve_request.beneficiary_ids
@@ -131,24 +132,29 @@ class SPARMapper(MapperInterface):
 
         for single_response in spar_response.response_body.response_payload.resolve_response:
             id_value = single_response.id
-
             fa_value = single_response.fa
+            status = single_response.status
+            status_reason_code = single_response.status_reason_code
 
             name_value = (
-                single_response.account_provider_info.name if single_response.account_provider_info else None
+                single_response.account_provider_info.name
+                if single_response.account_provider_info
+                else None
             )
 
             result = ResolveResult(
                 id=id_value,
                 fa=fa_value,
                 name=name_value,
+                status=status,
+                status_reason_code=status_reason_code,
             )
 
             results.append(result)
 
             _logger.debug(
                 f"Converted result: id={id_value}, fa={fa_value}, name={name_value}, "
-                f"status={single_response.status}, status_reason={single_response.status_reason_code}"
+                f"status={status}, status_reason={status_reason_code}"
             )
 
         return ResolveResponse(results=results)
