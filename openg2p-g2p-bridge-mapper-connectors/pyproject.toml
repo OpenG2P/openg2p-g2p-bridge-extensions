@@ -17,9 +17,10 @@ classifiers = [
 ]
 dependencies = [
   "openg2p-fastapi-common",
-  "openg2p-g2pconnect-mapper-lib",
+  "openg2p-spar-models",
   "httpx",
   "pydantic",
+  "orjson",
 ]
 dynamic = ["version"]
 
