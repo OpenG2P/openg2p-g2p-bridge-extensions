@@ -96,4 +96,3 @@ class SPARMapperClient(BaseService):
                 message="Unknown Error in resolve request",
                 code="500",
             ) from e
-

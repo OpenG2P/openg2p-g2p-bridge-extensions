@@ -137,9 +137,7 @@ class SPARMapper(MapperInterface):
             status_reason_code = single_response.status_reason_code
 
             name_value = (
-                single_response.account_provider_info.name
-                if single_response.account_provider_info
-                else None
+                single_response.account_provider_info.name if single_response.account_provider_info else None
             )
 
             result = ResolveResult(
