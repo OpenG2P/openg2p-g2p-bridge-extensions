@@ -8,9 +8,11 @@ class ResolveRequest(BaseModel):
 
 
 class ResolveResult(BaseModel):
-    id: str
-    fa: dict
+    id: Optional[str] = None
+    fa: Optional[dict] = None
     name: Optional[str] = None
+    status: Optional[str] = None
+    status_reason_code: Optional[str] = None
 
 
 class ResolveResponse(BaseModel):
